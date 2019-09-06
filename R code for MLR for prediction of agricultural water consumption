@@ -1,0 +1,63 @@
+# MOdel selection, AIC, BIC, AdjR2, RSE
+
+library(Metrics)
+library(scales)
+library(leaps)
+library(car)
+library(caTools)
+MyData1 <- read.csv(file="data for agriculture water prediction.csv",sep=",")
+MyData=MyData1[1:45,1:9]
+set.seed(123)
+split = sample.split(MyData$AgriWC, SplitRatio = 0.9)
+training_set = subset(MyData, split == TRUE)
+test_set = subset(MyData, split == FALSE)
+MyData2=MyData1[46:47,2:9]
+
+#Model selection
+refit=regsubsets(AgriWC~.-ï..Year,training_set,method='forward')
+sumry=summary(refit)
+names(sumry)
+
+par(mfrow=c(2,2))
+plot(sumry$rss,ylab='rss',type='l')
+p=which.min(sumry$rss)
+points(p,sumry$rss[p],pch=17,col='red')
+plot(sumry$adjr2,ylab='adjr2',type='l')
+p=which.max(sumry$adjr2)
+points(p,sumry$adjr2[p],pch=17,col='red')
+plot(sumry$cp,ylab='cp',type='l')
+p=which.min(sumry$cp)
+points(p,sumry$cp[p],pch=17,col='red')
+plot(sumry$bic,ylab='bic',type='l')
+p=which.min(sumry$bic)
+points(p,sumry$bic[p],pch=17,col='red')
+#sumry$which
+se=coef(refit,6)
+#Fiting selected model
+#Scaling data
+
+# Feature Scaling
+training_set = data.frame(scale(training_set))
+test_set = data.frame(scale(test_set))
+Fulldata=data.frame(scale(MyData))
+names(MyData)
+
+#Fitting model
+lm.fit=lm(AgriWC~.-ï..Year-Food.production.index..2004.2006...100., data =MyData)
+summary(lm.fit)
+
+#Prediction on test,train and entire data (to plot predicted vs original data)
+predicttest=predict(lm.fit, test_set)
+rmsetest=mse(test_set$AgriWC,predicttest)
+
+predicttrain=predict(lm.fit, training_set)
+rmsetrain=mse(training_set$AgriWC,predicttrain)
+vif(lm.fit)
+
+predictfull=predict(lm.fit, Fulldata)
+rmsefull=mse(Fulldata$AgriWC,predictfull)
+
+
+# Rescaling data
+vector1= c(min(MyData$AgriWC),max(MyData$AgriWC))
+pred2=data.frame(rescale(predictfull, to=vector1))
