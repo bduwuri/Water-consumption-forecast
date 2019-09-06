@@ -1,0 +1,73 @@
+# R 
+library(Metrics)
+library(Metrics)
+library(scales)
+library(leaps)
+library(caTools)
+library(car)
+library(RSEIS)
+library(devtools)
+library(vars)
+library(forecast)
+library(TSA)
+library(remotes)
+library(marima)
+
+#REad and split data
+MyData1 <- read.csv(file="data for agriculture water prediction.csv",sep=",")
+training_data=MyData1[11:47,2:9]
+training_data1=scale(training_data)#training data
+validation_data=MyData1[48:57,2:9]
+validation_data1=scale(validation_data)#training data
+MyDataT=MyData1[11:47,1]
+MyDataV=MyData1[48:57,1]
+Testdata=MyData[58:59,]
+
+mse3=data.frame()
+ar<-(7) 
+ma<-(3) 
+x=dim(training_data) 
+Mod <- define.model(kvar=x[2], ar=ar, ma=ma,rem.var = c(3)) 
+
+arp<-Mod$ar.pattern
+map<-Mod$ma.pattern
+#short.form(arp)
+#short.form(map)
+
+# Now call marima
+Model <- marima(training_data1, ar.pattern=arp, ma.pattern=map, penalty=2) #penalty2=AIC
+#summary(Model)
+ar.model<-Model$ar.estimates
+ma.model<-Model$ma.estimates
+
+#forecasting
+nstart=1
+nstep1=nrow(validation_data)
+nstep2=nrow(training_data)
+forecast=arma.forecast(training_data1,Model,nstart=1, nstep=nstep2-1) # try with differenced data later
+forecast1=arma.forecast(validation_data1,Model,nstart=1, nstep=nstep1-1) # try with differenced data later
+par(mfrow=c(1,2))
+
+# for training data
+My4sc=(training_data[,8])
+vector1= c(min(My4sc),max(My4sc))
+ReSclActual=(rescale(training_data1[,8], to=vector1))
+ReSclforcast=(rescale(forecast$forecasts[8, ], to=vector1))
+mse1=mse(ReSclActual,ReSclforcast)
+y=(MyDataT)
+plot(y,ReSclforcast,type='l', xlab='Year', ylab='AgriWC', main='AgriWC')
+lines(y, ReSclActual, type='p')
+
+#for validation data
+My4sc1=(validation_data[,8])
+vector2= c(min(My4sc1),max(My4sc1))
+ReSclActual1=(rescale(validation_data1[,8], to=vector2))
+y1=(MyDataV)
+ReSclforcast1=(rescale(forecast1$forecasts[8, ], to=vector2))
+plot((y1),(ReSclforcast1),type='l', xlab='Year', ylab='AgriWC', main='AgriWC')
+lines(y1, ReSclActual1, type='p')
+mse2=mse(ReSclActual1,ReSclforcast1)
+
+print("mse for training data")
+print (mse1)
+ 
