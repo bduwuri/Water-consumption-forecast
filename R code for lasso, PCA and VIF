@@ -1,0 +1,96 @@
+#LASSO
+
+library("glmnet")
+library("mvtnorm")
+
+#REad and split data
+MyData1 <- read.csv(file="data for agriculture water prediction.csv",sep=",")
+MyData=MyData1[11:57,2:9]
+X=MyData1[11:57,2:8]
+y=as.data.frame(MyData1[11:57,9])
+penalty<-as.data.frame(c(1,1,1,1,1,1,1,1))
+typeof(y[1])
+fit1=glmnet(as.matrix(X),as.matrix(y),family="gaussian", penalty.factor=as.matrix(penalty))
+cvob1=cv.glmnet(as.matrix(X),as.matrix(y))
+cvob1$lambda.min
+coef(fit1,s=cvob1$lambda.min)
+#--------------------------------------- 
+# VIF, Correlation
+
+library(Metrics)
+library(scales)
+library(leaps)
+library(caTools)
+library(car)
+library(RSEIS)
+library(devtools)
+library(vars)
+library(forecast)
+library(TSA)
+library(remotes)
+library(marima)
+
+
+#REad and split data
+MyData1 <- read.csv(file="data for agriculture water prediction.csv",sep=",")
+MyData4=MyData1[11:57,2:9]
+MyData=MyData1[11:57,1:9]
+MyData3=data.frame(MyData$ï..Year)
+lname=names(MyData)
+count=0
+
+#Detrending data
+for (i in (MyData4)) {
+  trended=detrend(i)
+  MyData3=cbind(MyData3,trended)
+}
+names(MyData5)
+names(MyData3)=lname
+
+#Scaling
+MyData2 = data.frame(scale(MyData))
+MyData5 = data.frame(scale(MyData3))
+
+#Fitting MLR model
+lm.fit1=lm(AgriWC~.-ï..Year, data =MyData3)
+lm.fit2=lm(AgriWC~.-ï..Year, data =MyData5)
+lm.fit3=lm(AgriWC~.-ï..Year-Food.production.index..2004.2006...100.-Agricultural.land..sq..km.-GDP..current.US.., data =MyData5)
+summary(lm.fit2)
+pred=predict(lm.fit2,MyData5)
+
+#Rescaling
+vector1= c(min(MyData3$AgriWC),max(MyData3$AgriWC))
+pred2=data.frame(rescale(pred, to=vector1))
+pred1=cbind(pred2,MyData3$AgriWC)
+
+#MSE
+mse1=mse(MyData3$AgriWC,pred)
+#Calculating Covariance using VIF
+vf1=as.list(vif(lm.fit2))
+
+# Calculating Corelation
+cor=cor(MyData5)
+
+#---------------------------------------------
+#PCA Analysis (Dimension REduction)
+pcr=(prcomp(MyData5,scale=FALSE))
+summary(pcr)
+names(pcr)
+eigen(pcr$rotation)
+par(mfrow=c(1,1))
+names(sum)
+hist(Proportion[2,],main="PRoportion variance explained")
+biplot(pcr)
+#or
+library("FactoMineR")
+res.pca <- PCA(MyData5[,2:8], graph = FALSE)
+eigenvalues <- res.pca$eig
+head(eigenvalues[, 1:2])
+
+library("factoextra")
+fviz_screeplot(res.pca, ncp=10)
+head(res.pca$var$contrib)
+par(mfrow=c(3,3))
+fviz_pca_contrib(res.pca, choice = "var", axes = 1:2)
+fviz_pca_contrib(res.pca, choice = "var", axes = 1)
+fviz_pca_contrib(res.pca, choice = "var", 
